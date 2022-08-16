@@ -30,6 +30,14 @@ struct TGAColor {
         for (int i=bpp; i--; bgra[i] = p[i]);
     }
     std::uint8_t& operator[](const int i) { return bgra[i]; }
+    std::uint8_t operator[](const int i) const { return bgra[i]; }
+    bool operator==(const TGAColor& rhs)
+    {
+        for (int i = 0;i < 4; ++i)
+            if (bgra[i] != rhs.bgra[i])
+                return false;
+        return true;
+    }
 };
 
 struct TGAImage {

@@ -5,11 +5,12 @@
 #include <vector>
 #include "model.h"
 
-Model::Model(const char* filename) : verts_(), faces_() {
+Model::Model(const char* filename) : verts_(), faces_(), tex_faces_() {
     std::ifstream in;
     in.open(filename, std::ifstream::in);
     if (in.fail()) return;
     std::string line;
+    int x = 0;
     while (!in.eof()) {
         std::getline(in, line);
         std::istringstream iss(line.c_str());
@@ -22,16 +23,29 @@ Model::Model(const char* filename) : verts_(), faces_() {
         }
         else if (!line.compare(0, 2, "f ")) {
             std::vector<int> f;
+            std::vector<int> t;
             int itrash, idx;
+            int slashes;
             iss >> trash;
-            while (iss >> idx >> trash >> itrash >> trash >> itrash) {
+            while (iss >> idx >> trash >> slashes >> trash >> itrash) {
                 idx--; // in wavefront obj all indices start at 1, not zero
                 f.push_back(idx);
+                t.push_back(slashes);
+                x = std::max(x, slashes);
             }
             faces_.push_back(f);
+            tex_faces_.push_back(f);
+        }
+        else if (!line.compare(0, 3, "vt ")){
+            iss >> trash;
+            iss >> trash;
+
+            Vec3f v;
+            for (int i = 0;i < 3; ++i) iss >> v.raw[i];
+            texture_.push_back(Vec2f(v.x, v.y));
         }
     }
-    std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
+    std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() <<  " vt# " << texture_.size() << std::endl;
 }
 
 Model::~Model() {
