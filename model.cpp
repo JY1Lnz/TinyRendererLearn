@@ -51,6 +51,7 @@ Model::Model(const char* filename) : verts_(), faces_(), tex_faces_() {
 
             Vec3f v;
             for (int i = 0;i < 3; ++i) iss >> v.raw[i];
+            // 模型导入坐标相反判断下
             texture_.push_back(Vec2f(v.x, 1 - v.y));
         }
     }

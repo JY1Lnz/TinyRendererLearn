@@ -2,6 +2,8 @@
 #define __GEOMETRY_H__
 
 #include <cmath>
+#include <iostream>
+#include <assert.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,5 +55,114 @@ template <class t> std::ostream& operator<<(std::ostream& s, Vec3<t>& v) {
 	s << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";
 	return s;
 }
+
+
+const int DEFAULT_ALLOC = 4;
+
+template<class T>
+class Matrix 
+{
+	std::vector<std::vector<T>> m;
+	int rows, cols;
+public:
+	Matrix(int r = DEFAULT_ALLOC, int c = DEFAULT_ALLOC):
+		m(std::vector<std::vector<T>>(r, std::vector<T>(c, 0))), rows(r), cols(c)
+	{ }
+	int nrows() { return rows; }
+	int ncols() { return cols; }
+
+	static Matrix<T> identity(int dimensions)
+	{
+		Matrix<T> E(dimensions, dimensions);
+		for (int i = 0;i < dimensions; ++i)
+			for (int j = 0;j < dimensions; ++j)
+				E[i][j] = (i == j ? 1 : 0);
+		return E;
+	}
+	std::vector<T>& operator[](const int i)
+	{
+		assert(i >= 0 && i < rows);
+		return m[i];
+	}
+	Matrix<T> operator*(const Matrix& rhs)
+	{
+		assert(cols == rhs.rows);
+		Matrix<T> result(rows, rhs.cols);
+		for (int i = 0;i < rows; ++i)
+		{
+			for (int j = 0;j < rhs.cols; ++j)
+			{
+				result[i][j] = 0;
+				for (int k = 0;k < cols; ++k)
+				{
+					result[i][j] += m[i][k] * rhs[k][j];
+				}
+			}
+		}
+		return result;
+	}
+	Matrix<T> transpose()
+	{
+		Matrix<T> result(cols, rows);
+		for(int i=0; i<rows; i++)
+			for(int j=0; j<cols; j++)
+				result[j][i] = m[i][j];
+		return result;
+	}
+	Matrix<T> inverse()
+	{
+		assert(rows==cols);
+		// augmenting the square matrix with the identity matrix of the same dimensions a => [ai]
+		Matrix<T> result(rows, cols*2);
+		for(int i=0; i<rows; i++)
+			for(int j=0; j<cols; j++)
+				result[i][j] = m[i][j];
+		for(int i=0; i<rows; i++)
+			result[i][i+cols] = 1;
+		// first pass
+		for (int i=0; i<rows-1; i++) {
+			// normalize the first row
+			for(int j=result.cols-1; j>=0; j--)
+				result[i][j] /= result[i][i];
+			for (int k=i+1; k<rows; k++) {
+				float coeff = result[k][i];
+				for (int j=0; j<result.cols; j++) {
+					result[k][j] -= result[i][j]*coeff;
+				}
+			}
+		}
+		// normalize the last row
+		for(int j=result.cols-1; j>=rows-1; j--)
+			result[rows-1][j] /= result[rows-1][rows-1];
+		// second pass
+		for (int i=rows-1; i>0; i--) {
+			for (int k=i-1; k>=0; k--) {
+				float coeff = result[k][i];
+				for (int j=0; j<result.cols; j++) {
+					result[k][j] -= result[i][j]*coeff;
+				}
+			}
+		}
+		// cut the identity matrix back
+		Matrix<T> truncate(rows, cols);
+		for(int i=0; i<rows; i++)
+			for(int j=0; j<cols; j++)
+				truncate[i][j] = result[i][j+cols];
+		return truncate;
+	}
+
+	friend std::ostream& operator<<(std::ostream& s, Matrix& m)
+	{
+		for (int i=0; i<m.nrows(); i++)  {
+			for (int j=0; j<m.ncols(); j++) {
+				s << m[i][j];
+				if (j<m.ncols()-1) s << "\t";
+			}
+        s << "\n";
+		}
+		return s;
+	}
+
+};
 
 #endif //__GEOMETRY_H__
