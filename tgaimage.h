@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: LinEngine
+ * @version: 1.0.0
+ * @Author: 晋毓麟
+ * @Date: 2022-08-16 21:41:00
+ * @LastEditors: jy1lnz
+ * @LastEditTime: 2022-08-17 00:05:08
+ */
 #pragma once
 #include <cstdint>
 #include <fstream>
@@ -31,6 +39,20 @@ struct TGAColor {
     }
     std::uint8_t& operator[](const int i) { return bgra[i]; }
     std::uint8_t operator[](const int i) const { return bgra[i]; }
+    inline TGAColor operator*(float intensity)
+    {
+        return TGAColor((float)bgra[2]*intensity,
+                        (float)bgra[1]*intensity,
+                        (float)bgra[0]*intensity,
+                        (float)bgra[3]*intensity);
+    }
+    inline TGAColor operator+(const TGAColor& rhs)
+    {
+        return TGAColor(std::min(bgra[0] + rhs.bgra[0], 255),
+            std::min(bgra[1] + rhs.bgra[1], 255),
+            std::min(bgra[2] + rhs.bgra[2], 255),
+            std::min(bgra[3] + rhs.bgra[3], 255));
+    }
     bool operator==(const TGAColor& rhs)
     {
         for (int i = 0;i < 4; ++i)

@@ -1,12 +1,13 @@
 #include "../tgaimage.h"
 #include "../model.h"
 #include "../geometry.h"
+#include <assert.h>
 #include <algorithm>
 #include <iostream>
 #include <math.h>
-#include <windows.h>
 #include <stdio.h>
 #include <direct.h>
+#include <numeric>
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
@@ -40,16 +41,17 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, Vec3f P) {
     return Vec3f(-1,1,1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
 
-void triangle(Vec3f *pts, float *z_buffer, TGAImage& image, TGAColor color)
+void triangle(Vec3f *pts, float *z_buffer, TGAImage& image, 
+	Vec2f* tex_coords, TGAImage& texture, float intensity)
 {
-	Vec2f box_min(std::numeric_limits<float>::max(),   std::numeric_limits<float>::max());
-	Vec2f box_max(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+	Vec2f box_min(image.width()-1, image.height());
+	Vec2f box_max(-1, -1);
 	Vec2f clamp(image.width() - 1, image.height() - 1);
 	for (int i = 0;i < 3; ++i)
 	{
 		for (int j = 0;j < 2; ++j)
 		{
-			box_min[j] = std::max(0.f, 		std::min(box_min[j], pts[i][j]));
+			box_min[j] = std::max(0.0f, 		(float)std::min(box_min[j], pts[i][j]));
 			box_max[j] = std::min(clamp[j], std::max(box_max[j], pts[i][j]));
 		}
 	}
@@ -65,22 +67,28 @@ void triangle(Vec3f *pts, float *z_buffer, TGAImage& image, TGAColor color)
 		for (p.y = box_min.y;p.y <= box_max.y; ++p.y)
 		{
 			Vec3f bc_screen = barycentric(pts[0], pts[1], pts[2], p);
-			if (bc_screen.x <= 0 || bc_screen.y <= 0 || bc_screen.z <= 0) continue;
+			if (bc_screen.x <= 0 || bc_screen.y <= 0 || bc_screen.z <= 0)
+			{
+				continue;
+			}
+			TGAColor tex;
+			Vec2f pos;
 			p.z = 0;
-			for (int i = 0;i < 3; ++i) p.z += bc_screen[i] * pts[i].z;
+			for (int i = 0; i < 3; ++i)
+			{
+				p.z += bc_screen[i] * pts[i].z;
+				tex = tex + texture.get(tex_coords[i].x, tex_coords[i].y) * bc_screen[i];
+				pos = pos + tex_coords[i] * bc_screen[i];
+			}
+			tex = texture.get(pos.x, pos.y);
 			if (z_buffer[int(p.x + p.y * width)] <= p.z)
 			{
 				z_buffer[int(p.x + p.y * width)] = p.z;
-				image.set(p.x, p.y, color);
+				image.set(p.x, p.y, tex * intensity);
 			}
 
 		}
 	}
-}
-
-void add_texture(const TGAImage& texture)
-{
-
 }
 
 int main()
@@ -90,39 +98,40 @@ int main()
 
 	Model* model = new Model("D:\\Project\\TinyRendererLearn\\african_head.obj");
 	TGAImage image(width, height, TGAImage::RGB);
+	TGAImage texture;
+	texture.read_tga_file("D:\\Project\\TinyRendererLearn\\african_head_diffuse.tga");
 	Vec3f light_dir = Vec3f(0, 0, -1);
 
 
 	for (int i = 0; i < model->nfaces(); ++i)
 	{
 		std::vector<int> face = model->face(i);
+		std::vector<int> tex_face = model->texface(i);
+		assert(tex_face.size() == 3);
+		for (auto v : tex_face)
+			assert(v >= 0);
 		Vec3f screen_coords[3];
 		Vec3f world_coords[3];
+		Vec2f tex_coords[3];
 		for (int j = 0; j < 3; ++j)
 		{
 			Vec3f p = model->vert(face[j]);
+			Vec2f tex = model->tex(tex_face[j]);
+			tex_coords[j] = Vec2f(tex.x * texture.width(), tex.y * texture.height());
 			world_coords[j] = p;
-			screen_coords[j] = Vec3f((p.x + 1.0) * width / 2.0 , (p.y + 1.0) * height / 2.0 , p.z );
+			screen_coords[j] = Vec3f((p.x + 1.0) * width / 2.0 ,
+									 (p.y + 1.0) * height / 2.0 , p.z );
 		}
-		Vec3f normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+		Vec3f normal = (world_coords[2] - world_coords[0]) ^
+			(world_coords[1] - world_coords[0]);
 		normal.normalize();
 		float intensity = light_dir * normal;
 		if (intensity > 0)
-			triangle(screen_coords, z_buffer, image, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
+			triangle(screen_coords, z_buffer, image, tex_coords, texture, 
+				intensity);
 	}
-	// for (int i = 0;i < width; ++i)
-	// {
-	// 	for (int j = 0;j < height; ++j)
-	// 	{
-	// 		if (image.get(i, j)[0] == 0 && image.get(i, j)[1] == 0 && image.get(i, j)[2] == 255)
-	// 		{
-	// 			std::cout << i << ' ' << j << std::endl;
-	// 		}
-	// 	}
-	// }
-
-	// image.flip_vertically();
-	image.write_tga_file("D:\\Project\\TinyRendererLearn\\Toutput.tga");
+	//image.flip_vertically();
+	image.write_tga_file("D:\\Project\\TinyRendererLearn\\output.tga");
 	delete model;
 
 	return 0;

@@ -15,8 +15,12 @@ public:
 	~Model();
 	int nverts();
 	int nfaces();
+	int ntex();
+	int ntexface();
 	Vec3f vert(int i);
+	Vec2f tex(int i);
 	std::vector<int> face(int idx);
+	std::vector<int> texface(int idx);
 };
 
 #endif //__MODEL_H__
