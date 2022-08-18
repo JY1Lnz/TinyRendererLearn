@@ -84,7 +84,7 @@ public:
 		assert(i >= 0 && i < rows);
 		return m[i];
 	}
-	Matrix<T> operator*(const Matrix& rhs)
+	Matrix<T> operator*(Matrix& rhs)
 	{
 		assert(cols == rhs.rows);
 		Matrix<T> result(rows, rhs.cols);
