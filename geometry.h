@@ -5,8 +5,6 @@
 #include <iostream>
 #include <assert.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 template <class t> struct Vec2 {
 	union {
 		struct { t u, v; };
@@ -30,6 +28,7 @@ template <class t> struct Vec3 {
 	};
 	Vec3() : x(0), y(0), z(0) {}
 	Vec3(t _x, t _y, t _z) : x(_x), y(_y), z(_z) {}
+	Vec3(const Vec4f& v) : x(v.x / v.w), y(v.y / v.w), z(v.z / v.w) { }
 	inline Vec3<t> operator ^(const Vec3<t>& v) const { return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); }
 	inline Vec3<t> operator +(const Vec3<t>& v) const { return Vec3<t>(x + v.x, y + v.y, z + v.z); }
 	inline Vec3<t> operator -(const Vec3<t>& v) const { return Vec3<t>(x - v.x, y - v.y, z - v.z); }
@@ -41,10 +40,34 @@ template <class t> struct Vec3 {
 	template <class > friend std::ostream& operator<<(std::ostream& s, Vec3<t>& v);
 };
 
+template <class t> struct Vec4 {
+	union {
+		struct { t x, y, z, w; };
+		t raw[4];
+	};
+	Vec4() : x(0), y(0), z(0), w(0) {}
+	Vec4(t _x, t _y, t _z, t _w): x(_x), y(_y), z(_z), w(_w) { }
+	Vec4<t> operator +(const Vec4<t>& v) const {
+		return Vec4<t>(x + v.x, y + v.y, z + v.z, w + v.w);
+	}
+	Vec4<t> operator -(const Vec4<t>& v) const {
+		return Vec4<t>(x - v.x, y - v.y, z - v.z, w + v.w);
+	}	
+	Vec4<t> operator -(float t) const {
+		return Vec3<t>(x * f, y * f, z * f, w * f);	
+	}
+	Vec4<t> operator /(float t) const {
+		return Vec4<t>(x / t, y / t, z / t, w / t);
+	}
+	t& operator[](int x) { return raw[x]; }
+	const t& operator[](int x) const { return raw[x]; }
+};
+
 typedef Vec2<float> Vec2f;
 typedef Vec2<int>   Vec2i;
 typedef Vec3<float> Vec3f;
 typedef Vec3<int>   Vec3i;
+typedef Vec4<float> Vec4f;
 
 template <class t> std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {
 	s << "(" << v.x << ", " << v.y << ")\n";
@@ -170,4 +193,6 @@ public:
 
 };
 
-#endif //__GEOMETRY_H__
+typedef Matrix<float> m4f;
+
+#endif

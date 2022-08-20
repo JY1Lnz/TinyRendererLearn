@@ -37,6 +37,9 @@ struct TGAColor {
     TGAColor(const std::uint8_t *p, const std::uint8_t bpp) : bytespp(bpp) {
         for (int i=bpp; i--; bgra[i] = p[i]);
     }
+    TGAColor(const std::uint8_t c) {
+        for (int i = 0;i < 4; ++i) bgra[i] = c;
+    }
     std::uint8_t& operator[](const int i) { return bgra[i]; }
     std::uint8_t operator[](const int i) const { return bgra[i]; }
     inline TGAColor operator*(float intensity)

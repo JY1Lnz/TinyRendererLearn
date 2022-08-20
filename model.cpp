@@ -54,6 +54,14 @@ Model::Model(const char* filename) : verts_(), faces_(), tex_faces_() {
             // 模型导入坐标相反判断下
             texture_.push_back(Vec2f(v.x, 1 - v.y));
         }
+        else if (!line.compare(0, 3, "vn "))
+        {
+            iss >> trash >> trash;
+            Vec3f n;
+            for (int i = 0;i < 3; ++i)
+                iss >> n[i];
+            norms_.push_back(n);
+        }
     }
     std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() <<  " vt# " << texture_.size() << std::endl;
 }

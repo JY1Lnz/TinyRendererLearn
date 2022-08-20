@@ -10,6 +10,7 @@ private:
 	std::vector<std::vector<int> > faces_;
 	std::vector<std::vector<int> > tex_faces_;
 	std::vector<Vec2f> texture_;
+	std::vector<Vec3f> norms_;
 public:
 	Model(const char* filename);
 	~Model();
