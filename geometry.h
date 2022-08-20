@@ -84,7 +84,12 @@ public:
 		assert(i >= 0 && i < rows);
 		return m[i];
 	}
-	Matrix<T> operator*(Matrix& rhs)
+	const std::vector<T>& operator[](const int i) const
+	{
+		assert(i >= 0 && i < rows);
+		return m[i];
+	}
+	Matrix<T> operator*(const Matrix<T>& rhs)
 	{
 		assert(cols == rhs.rows);
 		Matrix<T> result(rows, rhs.cols);
