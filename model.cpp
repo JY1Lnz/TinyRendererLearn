@@ -14,7 +14,7 @@
 #include "model.h"
 #include "assert.h"
 
-Model::Model(const char* filename) : verts_(), faces_(), tex_faces_() {
+Model::Model(const char* filename) : verts_(), faces_() {
     std::ifstream in;
     in.open(filename, std::ifstream::in);
     if (in.fail()) return;
@@ -30,20 +30,15 @@ Model::Model(const char* filename) : verts_(), faces_(), tex_faces_() {
             verts_.push_back(v);
         }
         else if (!line.compare(0, 2, "f ")) {
-            std::vector<int> f;
-            std::vector<int> t;
-            int itrash, idx;
-            int slashes;
+            std::vector<Vec3i> f;
+            Vec3i tmp;
+            int itrash;
             iss >> trash;
-            while (iss >> idx >> trash >> slashes >> trash >> itrash) {
-                idx--; // in wavefront obj all indices start at 1, not zero
-                slashes--;
-                assert(slashes >= 0);
-                f.push_back(idx);
-                t.push_back(slashes);
+            while (iss >> tmp[0] >> trash >> tmp[1] >> trash >> tmp[2]) {
+                for (int i = 0; i < 3; ++i) tmp[i] --;
+                f.push_back(tmp);
             }
             faces_.push_back(f);
-            tex_faces_.push_back(t);
         }
         else if (!line.compare(0, 3, "vt ")){
             iss >> trash;
@@ -82,21 +77,53 @@ int Model::ntex() {
 }
 
 int Model::ntexface() {
-    return (int)tex_faces_.size();
+    return (int)faces_.size();
 }
 
 std::vector<int> Model::face(int idx) {
-    return faces_[idx];
+    std::vector<int> face;
+    for (int i = 0; i < (int)faces_[idx].size(); ++i)
+        face.push_back(faces_[idx][i][0]);
+    return face;
 }
 
 std::vector<int> Model::texface(int idx) {
-    return tex_faces_[idx];
+    std::vector<int> tex;
+    for (int i = 0; i < (int)faces_[idx].size(); ++i) 
+        tex.push_back(faces_[idx][i][2]);
+    return tex;
 }
 
 Vec3f Model::vert(int i) {
     return verts_[i];
 }
 
+Vec3f Model::vert(int nthface, int nthvert)
+{
+    return verts_[faces_[nthface][nthvert][0]];
+}
+
 Vec2f Model::tex(int i) {
     return texture_[i];
+}
+
+Vec3f Model::normal(int nthface, int nthvert)
+{
+    return norms_[faces_[nthface][nthvert][2]].normalize();
+}
+
+Vec2f Model::texture(int nthface, int nthvert)
+{
+    return texture_[faces_[nthface][nthvert][1]];
+}
+
+void Model::LoadTexture(std::string file_name)
+{
+    diffusemap_.read_tga_file(file_name);
+}
+
+TGAColor Model::diffuse(Vec2f uv)
+{
+    Vec2i uvi(uv[0] * diffusemap_.width(), uv[1] * diffusemap_.height());
+    return diffusemap_.get(uvi[0], uvi[1]);
 }
